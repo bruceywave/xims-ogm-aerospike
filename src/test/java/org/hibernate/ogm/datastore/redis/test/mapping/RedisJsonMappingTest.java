@@ -28,21 +28,24 @@ public class RedisJsonMappingTest extends OgmTestCase {
 	@Test
 	public void canStoreAndLoadEntitiesWithIdGeneratorAndAssociation() {
 		OgmSession session = openSession();
-		session.getTransaction().begin();
-
-		// given
-		Plant ficus = new Plant( 181 );
-		session.persist( ficus );
-
-		Family family = new Family( "family-3", "Moraceae", ficus );
-		session.persist( family );
-
-		session.getTransaction().commit();
+//		session.getTransaction().begin();
+//
+//		// given
+//		Plant ficus = new Plant( 181 );
+//		session.persist( ficus );
+//
+//		Family family = new Family( "family-4", "Moraceae", ficus );
+//		session.persist( family );
+//
+//		session.getTransaction().commit();
 
 		// when
 		session.getTransaction().begin();
-		Family loadedFamily = (Family) session.get( Family.class, "family-1" );
-
+		Family loadedFamily = (Family) session.get( Family.class, "family-4" );
+//		event.internal.DefaultLoadEventListener:142 - HHH000327: Error performing load command : 
+//			org.hibernate.PropertyAccessException: Could not set field value [181] value by reflection : 
+//				[class org.hibernate.ogm.datastore.redis.test.mapping.Plant.height] setter of 
+//				org.hibernate.ogm.datastore.redis.test.mapping.Plant.height
 		// then
 		assertThat( loadedFamily ).isNotNull();
 		assertThat( loadedFamily.getMembers() ).onProperty( "height" ).containsExactly( 181 );

@@ -1,6 +1,7 @@
 package com.xinhuagroup.ogm.aerospike;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +30,7 @@ import org.hibernate.ogm.model.spi.AssociationKind;
 import org.hibernate.ogm.model.spi.Tuple;
 
 import com.aerospike.client.AerospikeClient;
+import com.aerospike.client.Key;
 import com.xinhuagroup.ogm.aerospike.dialect.model.AbstractAerospikeAssociation;
 import com.xinhuagroup.ogm.aerospike.dialect.model.AerospikeAssociationSnapshot;
 import com.xinhuagroup.ogm.aerospike.dialect.model.AerospikeTupleSnapshot;
@@ -179,39 +181,60 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 	@Override
 	public void forEachTuple(ModelConsumer consumer, EntityKeyMetadata... entityKeyMetadatas) {
 		// 首先循环遍历
-		// for (EntityKeyMetadata entityKeyMetadata : entityKeyMetadatas) {
-		// Record cursor = null;
-		// String prefix = entityKeyMetadata.getTable() + ":";
-		// byte[] prefixBytes = toBytes(prefix);
-		//
-		// ScanArgs scanArgs = ScanArgs.Builder.matches(prefix + "*");
-		// do {
-		// if (cursor != null) {
-		// cursor = connection.scan(cursor, scanArgs);
-		// } else {
-		// cursor = connection.scan(scanArgs);
-		// }
-		// for (byte[] key : cursor.getKeys()) {
-		// Entity document = entityStorageStrategy.getEntity(key);
-		// addKeyValuesFromKeyName(entityKeyMetadata, prefixBytes, key,
-		// document);
-		// consumer.consume(new Tuple(new
-		// AerospikeTupleSnapshot(document.getProperties())));
-		// }
-		// } while (!cursor.isFinished());
-		// }
+		 for (EntityKeyMetadata entityKeyMetadata : entityKeyMetadatas) {
+			 List<Key> keys = aerospikeOperation.scanEntity(entityKeyMetadata);
+			 for (Key key : keys) {
+				Entity entity = aerospikeOperation.getEntity(key);
+				addKeyValuesFromKeyName(entityKeyMetadata,key,entity);
+				consumer.consume(new Tuple(new AerospikeTupleSnapshot(entity.getProperties())));
+			}
+		 }
+	}
+
+	private void addKeyValuesFromKeyName(EntityKeyMetadata entityKeyMetadata, Key key,Entity entity) {
+		if(key.setName.equals(entityKeyMetadata.getTable())){
+			Map<String,Object> keyMaps = keyToMap(entityKeyMetadata, key);
+			for (Map.Entry<String, Object> keyMap : keyMaps.entrySet()) {
+				entity.set(keyMap.getKey(), keyMap.getValue());
+			}
+		}
+	}
+	
+	private Map<String, Object> keyToMap(EntityKeyMetadata entityKeyMetadata,Key key){
+		if(entityKeyMetadata.getColumnNames().length == 1){
+			return Collections.singletonMap(entityKeyMetadata.getColumnNames()[0], key.userKey);
+		}
+		return null;
 	}
 
 	@Override
-	public List<Tuple> getTuples(EntityKey[] arg0, TupleContext arg1) {
-		// TODO Auto-generated method stub
-		return null;
+	public List<Tuple> getTuples(EntityKey[] entityKeys, TupleContext tupleContext) {
+		//获取所有的实体
+		List<Entity> entities = aerospikeOperation.getEntitys(entityKeys);
+		List<Tuple> tuples = new ArrayList<Tuple>(entityKeys.length);
+		int index = 0;
+		for (Entity entity : entities) {
+			if(entity != null) {
+				EntityKey key = entityKeys[index];
+				addIdToEntity(entity, key.getColumnNames(), key.getColumnValues());
+				tuples.add(new Tuple(new AerospikeTupleSnapshot(entity.getProperties())));
+			}
+			index ++;
+		}
+		return tuples;
+	}
+	
+	private void addIdToEntity(Entity entity,String[] cloumnNames,Object[] columnValues){
+		for (int i = 0; i < cloumnNames.length; i++) {
+			entity.set(cloumnNames[i], columnValues[i]);
+		}
 	}
 
 	private AssociationStorageType getAssociationStorageType(AssociationTypeContext associationTypeContext) {
 		return associationTypeContext.getOptionsContext().getUnique(AssociationStorageOption.class);
 	}
 
+	@SuppressWarnings("unchecked")
 	private Object getAssociationRows(Association association, AssociationKey associationKey, AssociationContext associationContext) {
 		boolean organizeByRowKey = DotPatternMapHelpers.organizeAssociationMapByRowKey(association, associationKey, associationContext);
 		if (isStoredInEntityStructure(associationKey.getMetadata(), associationContext.getAssociationTypeContext()) && organizeByRowKey) {

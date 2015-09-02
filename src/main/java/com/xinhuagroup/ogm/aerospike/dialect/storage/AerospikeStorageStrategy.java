@@ -1,16 +1,22 @@
 package com.xinhuagroup.ogm.aerospike.dialect.storage;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.hibernate.ogm.dialect.spi.TupleContext;
 import org.hibernate.ogm.model.key.spi.AssociationKey;
 import org.hibernate.ogm.model.key.spi.EntityKey;
+import org.hibernate.ogm.model.key.spi.EntityKeyMetadata;
 import org.hibernate.ogm.model.spi.Tuple;
 
 import com.aerospike.client.AerospikeClient;
+import com.aerospike.client.AerospikeException;
 import com.aerospike.client.Bin;
 import com.aerospike.client.Key;
 import com.aerospike.client.Record;
+import com.aerospike.client.ScanCallback;
 import com.aerospike.client.Value;
 import com.xinhuagroup.ogm.aerospike.dialect.value.Entity;
 import com.xinhuagroup.ogm.aerospike.impl.AerospikeClientPolicy;
@@ -43,6 +49,28 @@ public class AerospikeStorageStrategy  {
 		else
 			return null;
 	}
+	
+	/**
+	 * 通过EntityKey 列表获取所有的对象
+	 * @param entityKeys
+	 * @return
+	 */
+	public List<Entity> getEntitys(Object[] entityKeys){
+		Key[] keys = new Key[entityKeys.length];
+		//获取所有的KEY
+		for (int i = 0; i < entityKeys.length; i++) {
+			keys[i] = createKey(entityKeys[i]);
+		}
+		Record[] records = aerospikeClient.get(null, keys);
+		if(records != null){
+			List<Entity> entitys = new ArrayList<Entity>();
+			for (Record record : records) {
+				entitys.add(new Entity(record.bins));
+			}
+			return entitys;
+		}
+		return null;
+	}
 
 	/**
 	 * 删除实体
@@ -53,9 +81,16 @@ public class AerospikeStorageStrategy  {
 		aerospikeClient.delete(null, createKey(entityKey));
 	}
 
-	public void scanEntity(Key[] keys,Object...paObjects){
-		
-		aerospikeClient.scanAll(null, aerospikeClientPolicy.databaseName,null, null, null);
+	public List<Key> scanEntity(EntityKeyMetadata entityKeyMetadata){
+		List<Key> keys = new ArrayList<Key>();
+		aerospikeClient.scanAll(null, aerospikeClientPolicy.databaseName, entityKeyMetadata.getTable(), new ScanCallback() {
+			@Override
+			public void scanCallback(Key key, Record record) throws AerospikeException {
+				Map<String, Object> keyProperties = new HashMap<String, Object>();
+				keys.add(key);
+			}
+		}, entityKeyMetadata.getColumnNames());
+		return keys;
 	}
 	
 	/**
@@ -88,6 +123,8 @@ public class AerospikeStorageStrategy  {
 			Object value = key.getColumnValues()[0];
 			return this.createKey(aerospikeClientPolicy.databaseName, table, value);
 		}
+		if(entityKey instanceof Key)
+			return (Key) entityKey;
 		return null;
 	}
 
