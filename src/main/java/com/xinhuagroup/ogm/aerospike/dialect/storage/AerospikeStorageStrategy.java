@@ -21,12 +21,11 @@ import com.xinhuagroup.ogm.aerospike.impl.AerospikeClientPolicy;
  * @author brucey
  *
  */
-public class AerospikeStorageStrategy extends EntityStructureReader {
+public class AerospikeStorageStrategy  {
 	private final AerospikeClient aerospikeClient;
 	private final AerospikeClientPolicy aerospikeClientPolicy;
 
 	public AerospikeStorageStrategy(AerospikeClient aerospikeClient, AerospikeClientPolicy aerospikeClientPolicy) {
-		super(aerospikeClient, aerospikeClientPolicy);
 		this.aerospikeClient = aerospikeClient;
 		this.aerospikeClientPolicy = aerospikeClientPolicy;
 	}

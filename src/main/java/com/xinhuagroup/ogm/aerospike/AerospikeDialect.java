@@ -29,9 +29,6 @@ import org.hibernate.ogm.model.spi.AssociationKind;
 import org.hibernate.ogm.model.spi.Tuple;
 
 import com.aerospike.client.AerospikeClient;
-import com.aerospike.client.Key;
-import com.aerospike.client.Record;
-import com.xinhuagroup.ogm.aerospike.dialect.annotations.AerospikeEntity;
 import com.xinhuagroup.ogm.aerospike.dialect.model.AbstractAerospikeAssociation;
 import com.xinhuagroup.ogm.aerospike.dialect.model.AerospikeAssociationSnapshot;
 import com.xinhuagroup.ogm.aerospike.dialect.model.AerospikeTupleSnapshot;
@@ -40,7 +37,6 @@ import com.xinhuagroup.ogm.aerospike.dialect.storage.RecordUtils;
 import com.xinhuagroup.ogm.aerospike.dialect.value.DocumentAssociation;
 import com.xinhuagroup.ogm.aerospike.dialect.value.Entity;
 import com.xinhuagroup.ogm.aerospike.impl.AerospikeDatastoreProvider;
-import com.xinhuagroup.ogm.aerospike.impl.AerospikeOperation;
 
 @SuppressWarnings("serial")
 public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect {
