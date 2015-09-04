@@ -41,6 +41,11 @@ public class Family {
 		);
 	}
 
+	public Family(String id, String name, List<Plant> memebers) {
+		this.id = id;
+		this.name = name;
+		this.members = memebers;
+	}
 	public String getId() {
 		return id;
 	}

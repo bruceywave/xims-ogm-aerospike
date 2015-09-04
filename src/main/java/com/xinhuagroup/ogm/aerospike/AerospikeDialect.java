@@ -1,5 +1,6 @@
 package com.xinhuagroup.ogm.aerospike;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -7,12 +8,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
+import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.ogm.datastore.document.association.spi.impl.DocumentHelpers;
 import org.hibernate.ogm.datastore.document.impl.DotPatternMapHelpers;
 import org.hibernate.ogm.datastore.document.options.AssociationStorageType;
 import org.hibernate.ogm.datastore.document.options.spi.AssociationStorageOption;
 import org.hibernate.ogm.datastore.map.impl.MapHelpers;
+import org.hibernate.ogm.dialect.batch.spi.BatchableGridDialect;
+import org.hibernate.ogm.dialect.batch.spi.OperationsQueue;
+import org.hibernate.ogm.dialect.identity.spi.IdentityColumnAwareGridDialect;
 import org.hibernate.ogm.dialect.multiget.spi.MultigetGridDialect;
+import org.hibernate.ogm.dialect.optimisticlock.spi.OptimisticLockingAwareGridDialect;
+import org.hibernate.ogm.dialect.query.spi.BackendQuery;
+import org.hibernate.ogm.dialect.query.spi.ClosableIterator;
+import org.hibernate.ogm.dialect.query.spi.ParameterMetadataBuilder;
+import org.hibernate.ogm.dialect.query.spi.QueryableGridDialect;
 import org.hibernate.ogm.dialect.spi.AssociationContext;
 import org.hibernate.ogm.dialect.spi.AssociationTypeContext;
 import org.hibernate.ogm.dialect.spi.BaseGridDialect;
@@ -28,6 +38,8 @@ import org.hibernate.ogm.model.key.spi.RowKey;
 import org.hibernate.ogm.model.spi.Association;
 import org.hibernate.ogm.model.spi.AssociationKind;
 import org.hibernate.ogm.model.spi.Tuple;
+import org.hibernate.ogm.type.spi.GridType;
+import org.hibernate.type.Type;
 
 import com.aerospike.client.AerospikeClient;
 import com.aerospike.client.Key;
@@ -41,7 +53,7 @@ import com.xinhuagroup.ogm.aerospike.dialect.value.Entity;
 import com.xinhuagroup.ogm.aerospike.impl.AerospikeDatastoreProvider;
 
 @SuppressWarnings("serial")
-public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect {
+public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect,QueryableGridDialect<Serializable>,BatchableGridDialect {
 	private final AerospikeClient aerospikeClient;
 	private final AerospikeStorageStrategy aerospikeOperation;
 
@@ -51,8 +63,14 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 	}
 
 	@Override
+	public GridType overrideType(Type type) {
+		// return aerospikeOperation.convert(type);
+		return null;
+	}
+
+	@Override
 	public Tuple getTuple(EntityKey key, TupleContext tupleContext) {
-		Entity entity = aerospikeOperation.getEntity(key);
+		Entity entity = aerospikeOperation.getEntity(key, tupleContext);
 		if (entity != null) {
 			return new Tuple(new AerospikeTupleSnapshot(entity.getProperties()));
 		}
@@ -181,27 +199,27 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 	@Override
 	public void forEachTuple(ModelConsumer consumer, EntityKeyMetadata... entityKeyMetadatas) {
 		// 首先循环遍历
-		 for (EntityKeyMetadata entityKeyMetadata : entityKeyMetadatas) {
-			 List<Key> keys = aerospikeOperation.scanEntity(entityKeyMetadata);
-			 for (Key key : keys) {
+		for (EntityKeyMetadata entityKeyMetadata : entityKeyMetadatas) {
+			List<Key> keys = aerospikeOperation.scanEntity(entityKeyMetadata);
+			for (Key key : keys) {
 				Entity entity = aerospikeOperation.getEntity(key);
-				addKeyValuesFromKeyName(entityKeyMetadata,key,entity);
+				addKeyValuesFromKeyName(entityKeyMetadata, key, entity);
 				consumer.consume(new Tuple(new AerospikeTupleSnapshot(entity.getProperties())));
 			}
-		 }
+		}
 	}
 
-	private void addKeyValuesFromKeyName(EntityKeyMetadata entityKeyMetadata, Key key,Entity entity) {
-		if(key.setName.equals(entityKeyMetadata.getTable())){
-			Map<String,Object> keyMaps = keyToMap(entityKeyMetadata, key);
+	private void addKeyValuesFromKeyName(EntityKeyMetadata entityKeyMetadata, Key key, Entity entity) {
+		if (key.setName.equals(entityKeyMetadata.getTable())) {
+			Map<String, Object> keyMaps = keyToMap(entityKeyMetadata, key);
 			for (Map.Entry<String, Object> keyMap : keyMaps.entrySet()) {
 				entity.set(keyMap.getKey(), keyMap.getValue());
 			}
 		}
 	}
-	
-	private Map<String, Object> keyToMap(EntityKeyMetadata entityKeyMetadata,Key key){
-		if(entityKeyMetadata.getColumnNames().length == 1){
+
+	private Map<String, Object> keyToMap(EntityKeyMetadata entityKeyMetadata, Key key) {
+		if (entityKeyMetadata.getColumnNames().length == 1) {
 			return Collections.singletonMap(entityKeyMetadata.getColumnNames()[0], key.userKey);
 		}
 		return null;
@@ -209,22 +227,22 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 
 	@Override
 	public List<Tuple> getTuples(EntityKey[] entityKeys, TupleContext tupleContext) {
-		//获取所有的实体
+		// 获取所有的实体
 		List<Entity> entities = aerospikeOperation.getEntitys(entityKeys);
 		List<Tuple> tuples = new ArrayList<Tuple>(entityKeys.length);
 		int index = 0;
 		for (Entity entity : entities) {
-			if(entity != null) {
+			if (entity != null) {
 				EntityKey key = entityKeys[index];
 				addIdToEntity(entity, key.getColumnNames(), key.getColumnValues());
 				tuples.add(new Tuple(new AerospikeTupleSnapshot(entity.getProperties())));
 			}
-			index ++;
+			index++;
 		}
 		return tuples;
 	}
-	
-	private void addIdToEntity(Entity entity,String[] cloumnNames,Object[] columnValues){
+
+	private void addIdToEntity(Entity entity, String[] cloumnNames, Object[] columnValues) {
 		for (int i = 0; i < cloumnNames.length; i++) {
 			entity.set(cloumnNames[i], columnValues[i]);
 		}
@@ -282,5 +300,28 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 		String[] associationKeyColumns = associationKey.getMetadata().getAssociatedEntityKeyMetadata().getAssociationKeyColumns();
 		String prefix = DocumentHelpers.getColumnSharedPrefix(associationKeyColumns);
 		return prefix == null ? "" : prefix + ".";
+	}
+
+	@Override
+	public ClosableIterator<Tuple> executeBackendQuery(BackendQuery<Serializable> query, QueryParameters queryParameters) {
+		System.out.println();
+		return null;
+	}
+
+	@Override
+	public ParameterMetadataBuilder getParameterMetadataBuilder() {
+		System.out.println();
+		return null;
+	}
+
+	@Override
+	public Serializable parseNativeQuery(String nativeQuery) {
+		System.out.println();
+		return null;
+	}
+
+	@Override
+	public void executeBatch(OperationsQueue queue) {
+		
 	}
 }
