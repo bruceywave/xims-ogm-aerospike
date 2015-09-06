@@ -8,9 +8,11 @@ package org.hibernate.ogm.datastore.redis.test.mapping;
 
 import static org.fest.assertions.Assertions.assertThat;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.hibernate.Query;
 import org.hibernate.ogm.OgmSession;
 import org.hibernate.ogm.datastore.spi.DatastoreProvider;
 import org.hibernate.ogm.utils.OgmTestCase;
@@ -63,13 +65,17 @@ public class RedisJsonMappingTest extends OgmTestCase {
 //		assertThat( loadedFamily ).isNotNull();
 //		System.out.println(loadedFamily.getMembers());
 //		session.getTransaction().commit();
+		session.getTransaction().begin();
 		List<?> results = null;
 		try {
-			results = session.createQuery( "from Family h where h.name like '%yang'" ).list();
+			Query query = session.createQuery("from Family h where h.name=:name");
+			query.setParameter("name", "yangbo");
+			results = query.list();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		System.out.println(results);
+		session.getTransaction().commit();
 		session.close();
 	}
 

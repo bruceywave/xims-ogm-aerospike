@@ -1,6 +1,5 @@
 package com.xinhuagroup.ogm.aerospike;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,11 +15,10 @@ import org.hibernate.ogm.datastore.document.options.spi.AssociationStorageOption
 import org.hibernate.ogm.datastore.map.impl.MapHelpers;
 import org.hibernate.ogm.dialect.batch.spi.BatchableGridDialect;
 import org.hibernate.ogm.dialect.batch.spi.OperationsQueue;
-import org.hibernate.ogm.dialect.identity.spi.IdentityColumnAwareGridDialect;
 import org.hibernate.ogm.dialect.multiget.spi.MultigetGridDialect;
-import org.hibernate.ogm.dialect.optimisticlock.spi.OptimisticLockingAwareGridDialect;
 import org.hibernate.ogm.dialect.query.spi.BackendQuery;
 import org.hibernate.ogm.dialect.query.spi.ClosableIterator;
+import org.hibernate.ogm.dialect.query.spi.NoOpParameterMetadataBuilder;
 import org.hibernate.ogm.dialect.query.spi.ParameterMetadataBuilder;
 import org.hibernate.ogm.dialect.query.spi.QueryableGridDialect;
 import org.hibernate.ogm.dialect.spi.AssociationContext;
@@ -40,6 +38,10 @@ import org.hibernate.ogm.model.spi.AssociationKind;
 import org.hibernate.ogm.model.spi.Tuple;
 import org.hibernate.ogm.type.spi.GridType;
 import org.hibernate.type.Type;
+import org.parboiled.Parboiled;
+import org.parboiled.errors.ErrorUtils;
+import org.parboiled.parserunners.RecoveringParseRunner;
+import org.parboiled.support.ParsingResult;
 
 import com.aerospike.client.AerospikeClient;
 import com.aerospike.client.Key;
@@ -51,9 +53,13 @@ import com.xinhuagroup.ogm.aerospike.dialect.storage.RecordUtils;
 import com.xinhuagroup.ogm.aerospike.dialect.value.DocumentAssociation;
 import com.xinhuagroup.ogm.aerospike.dialect.value.Entity;
 import com.xinhuagroup.ogm.aerospike.impl.AerospikeDatastoreProvider;
+import com.xinhuagroup.ogm.aerospike.query.impl.AerospikeQueryDescriptor;
+import com.xinhuagroup.ogm.aerospike.query.parsing.nativequery.impl.AerospikeQueryDescriptorBuilder;
+import com.xinhuagroup.ogm.aerospike.query.parsing.nativequery.impl.NativeQueryParser;
 
 @SuppressWarnings("serial")
-public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect,QueryableGridDialect<Serializable>,BatchableGridDialect {
+public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect, QueryableGridDialect<AerospikeQueryDescriptor>, BatchableGridDialect {
+	public static String ID_FIELDNAME = "";
 	private final AerospikeClient aerospikeClient;
 	private final AerospikeStorageStrategy aerospikeOperation;
 
@@ -90,6 +96,7 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 		Map<String, Object> properties = ((AerospikeTupleSnapshot) tuple.getSnapshot()).getProperties();
 		MapHelpers.applyTupleOpsOnMap(tuple, properties);
 		aerospikeOperation.insertOrUpdate(key, properties);
+		//AbstractEntityTuplizer
 	}
 
 	@Override
@@ -303,25 +310,54 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 	}
 
 	@Override
-	public ClosableIterator<Tuple> executeBackendQuery(BackendQuery<Serializable> query, QueryParameters queryParameters) {
-		System.out.println();
-		return null;
+	public ClosableIterator<Tuple> executeBackendQuery(BackendQuery<AerospikeQueryDescriptor> backendQuery, QueryParameters queryParameters) {
+		AerospikeQueryDescriptor queryDescriptor = backendQuery.getQuery();
+		EntityKeyMetadata entityKeyMetadata = backendQuery.getSingleEntityKeyMetadataOrNull();
+		//获取集合名称,实际是获取表名
+		String collectionName = getCollectionName(backendQuery, queryDescriptor, entityKeyMetadata);
+//		DBCollection collection = provider.getDatabase().getCollection(collectionName);
+		switch (queryDescriptor.getOperation()) {
+		case FIND:
+			System.out.println();
+//			return doFind(queryDescriptor, queryParameters, collection, entityKeyMetadata);
+		case AGGREGATE:
+//			return doAggregate(queryDescriptor, queryParameters, collection, entityKeyMetadata);
+		case COUNT:
+//			return doCount(queryDescriptor, collection);
+		default:
+			throw new IllegalArgumentException("Unexpected query operation: " + queryDescriptor);
+		}
+	}
+
+	private String getCollectionName(BackendQuery<?> customQuery, AerospikeQueryDescriptor queryDescriptor, EntityKeyMetadata entityKeyMetadata) {
+		if (queryDescriptor.getCollectionName() != null) {
+			return queryDescriptor.getCollectionName();
+		} else if (entityKeyMetadata != null) {
+			return entityKeyMetadata.getTable();
+		} else {
+			// throw log.unableToDetermineCollectionName(
+			// customQuery.getQuery().toString() );
+			return null;
+		}
 	}
 
 	@Override
 	public ParameterMetadataBuilder getParameterMetadataBuilder() {
-		System.out.println();
-		return null;
+		return NoOpParameterMetadataBuilder.INSTANCE;
 	}
 
 	@Override
-	public Serializable parseNativeQuery(String nativeQuery) {
-		System.out.println();
-		return null;
+	public AerospikeQueryDescriptor parseNativeQuery(String nativeQuery) {
+		NativeQueryParser parser = Parboiled.createParser(NativeQueryParser.class);
+		ParsingResult<AerospikeQueryDescriptorBuilder> parseResult = new RecoveringParseRunner<AerospikeQueryDescriptorBuilder>(parser.Query()).run(nativeQuery);
+		if (parseResult.hasErrors()) {
+			throw new IllegalArgumentException("Unsupported native query: " + ErrorUtils.printParseErrors(parseResult.parseErrors));
+		}
+		return parseResult.resultValue.build();
 	}
 
 	@Override
 	public void executeBatch(OperationsQueue queue) {
-		
+
 	}
 }
