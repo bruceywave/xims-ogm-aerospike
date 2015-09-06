@@ -56,7 +56,7 @@ import com.xinhuagroup.ogm.aerospike.query.parsing.nativequery.impl.AerospikeQue
 import com.xinhuagroup.ogm.aerospike.query.parsing.nativequery.impl.NativeQueryParser;
 
 @SuppressWarnings("serial")
-public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect, QueryableGridDialect<AerospikeQueryDescriptor>{
+public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect, QueryableGridDialect<AerospikeQueryDescriptor> {
 	public static String ID_FIELDNAME = "";
 	private final AerospikeClient aerospikeClient;
 	private final AerospikeStorageStrategy aerospikeOperation;
