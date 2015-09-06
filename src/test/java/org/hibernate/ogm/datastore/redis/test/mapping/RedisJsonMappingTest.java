@@ -56,29 +56,29 @@ public class RedisJsonMappingTest extends OgmTestCase {
 //		session.getTransaction().commit();
 //
 //		// when
-		session.getTransaction().begin();
-		Family loadedFamily = (Family) session.get( Family.class, "yangbo123" );
+//		session.getTransaction().begin();
+//		Family loadedFamily = (Family) session.get( Family.class, "yangbo123" );
 //		event.internal.DefaultLoadEventListener:142 - HHH000327: Error performing load command : 
 //			org.hibernate.PropertyAccessException: Could not set field value [181] value by reflection : 
 //				[class org.hibernate.ogm.datastore.redis.test.mapping.Plant.height] setter of 
 //				org.hibernate.ogm.datastore.redis.test.mapping.Plant.height
 		// then
 //		assertThat( loadedFamily ).isNotNull();
-		System.out.println(loadedFamily.getMembers());
-		session.getTransaction().commit();
-		
-		
-//		session.getTransaction().begin();
-//		List<?> results = null;
-//		try {
-//			Query query = session.createQuery("from Family h where h.name=:name");
-//			query.setParameter("name", "yangbo");
-//			results = query.list();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		System.out.println(results);
+//		System.out.println(loadedFamily.getMembers());
 //		session.getTransaction().commit();
+		
+		
+		session.getTransaction().begin();
+		List<?> results = null;
+		try {
+			Query query = session.createQuery("from Family h where h.name=:name");
+			query.setParameter("name", "yangbo");
+			results = query.list();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		System.out.println(results);
+		session.getTransaction().commit();
 		session.close();
 	}
 

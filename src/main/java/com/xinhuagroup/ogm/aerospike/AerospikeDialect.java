@@ -13,8 +13,6 @@ import org.hibernate.ogm.datastore.document.impl.DotPatternMapHelpers;
 import org.hibernate.ogm.datastore.document.options.AssociationStorageType;
 import org.hibernate.ogm.datastore.document.options.spi.AssociationStorageOption;
 import org.hibernate.ogm.datastore.map.impl.MapHelpers;
-import org.hibernate.ogm.dialect.batch.spi.BatchableGridDialect;
-import org.hibernate.ogm.dialect.batch.spi.OperationsQueue;
 import org.hibernate.ogm.dialect.multiget.spi.MultigetGridDialect;
 import org.hibernate.ogm.dialect.query.spi.BackendQuery;
 import org.hibernate.ogm.dialect.query.spi.ClosableIterator;
@@ -58,7 +56,7 @@ import com.xinhuagroup.ogm.aerospike.query.parsing.nativequery.impl.AerospikeQue
 import com.xinhuagroup.ogm.aerospike.query.parsing.nativequery.impl.NativeQueryParser;
 
 @SuppressWarnings("serial")
-public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect, QueryableGridDialect<AerospikeQueryDescriptor>, BatchableGridDialect {
+public class AerospikeDialect extends BaseGridDialect implements MultigetGridDialect, QueryableGridDialect<AerospikeQueryDescriptor> {
 	public static String ID_FIELDNAME = "";
 	private final AerospikeClient aerospikeClient;
 	private final AerospikeStorageStrategy aerospikeOperation;
@@ -318,7 +316,7 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 //		DBCollection collection = provider.getDatabase().getCollection(collectionName);
 		switch (queryDescriptor.getOperation()) {
 		case FIND:
-			System.out.println();
+			return aerospikeOperation.queryEntitys(queryDescriptor, queryParameters, entityKeyMetadata);
 //			return doFind(queryDescriptor, queryParameters, collection, entityKeyMetadata);
 		case AGGREGATE:
 //			return doAggregate(queryDescriptor, queryParameters, collection, entityKeyMetadata);
@@ -354,10 +352,5 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 			throw new IllegalArgumentException("Unsupported native query: " + ErrorUtils.printParseErrors(parseResult.parseErrors));
 		}
 		return parseResult.resultValue.build();
-	}
-
-	@Override
-	public void executeBatch(OperationsQueue queue) {
-
 	}
 }
