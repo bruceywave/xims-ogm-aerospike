@@ -10,19 +10,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 
+import org.hibernate.search.annotations.Analyze;
+import org.hibernate.search.annotations.Field;
+import org.hibernate.search.annotations.Indexed;
+
 /**
  * @author Gunnar Morling
  */
+//@Indexed
 @Entity
 public class Family {
 
 	@Id
 	private String id;
-
+//	@Field(analyze=Analyze.NO)
 	private String name;
 
 	@OneToMany
@@ -41,6 +47,11 @@ public class Family {
 		);
 	}
 
+	public Family(String id, String name, List<Plant> memebers) {
+		this.id = id;
+		this.name = name;
+		this.members = memebers;
+	}
 	public String getId() {
 		return id;
 	}

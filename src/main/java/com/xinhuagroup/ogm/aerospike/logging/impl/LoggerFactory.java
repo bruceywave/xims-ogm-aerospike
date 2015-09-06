@@ -13,7 +13,7 @@ public class LoggerFactory {
 	private static final CallerProvider callerProvider = new CallerProvider();
 
 	public static AerospikeLog getLogger() {
-		return Logger.getMessageLogger( AerospikeLogImpl.class, callerProvider.getCallerClass().getCanonicalName() );
+		return Logger.getMessageLogger(AerospikeLog.class, callerProvider.getCallerClass().getCanonicalName() );
 	}
 
 	private static class CallerProvider extends SecurityManager {

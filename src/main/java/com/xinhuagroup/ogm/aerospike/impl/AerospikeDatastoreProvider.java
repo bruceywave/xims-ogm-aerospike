@@ -6,7 +6,9 @@ import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.ogm.cfg.spi.Hosts;
 import org.hibernate.ogm.cfg.spi.Hosts.HostAndPort;
 import org.hibernate.ogm.datastore.spi.BaseDatastoreProvider;
+import org.hibernate.ogm.datastore.spi.SchemaDefiner;
 import org.hibernate.ogm.dialect.spi.GridDialect;
+import org.hibernate.ogm.query.spi.QueryParserService;
 import org.hibernate.ogm.util.configurationreader.spi.ConfigurationPropertyReader;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.Configurable;
@@ -21,6 +23,7 @@ import com.aerospike.client.policy.ClientPolicy;
 import com.xinhuagroup.ogm.aerospike.AerospikeDialect;
 import com.xinhuagroup.ogm.aerospike.logging.AerospikeLog;
 import com.xinhuagroup.ogm.aerospike.logging.impl.LoggerFactory;
+import com.xinhuagroup.ogm.aerospike.query.impl.AerospikeQueryParserService;
 
 @SuppressWarnings("serial")
 public class AerospikeDatastoreProvider extends BaseDatastoreProvider implements Startable, Stoppable, ServiceRegistryAwareService, Configurable {
@@ -59,6 +62,16 @@ public class AerospikeDatastoreProvider extends BaseDatastoreProvider implements
 	@Override
 	public void injectServices(ServiceRegistryImplementor serviceRegistry) {
 		this.serviceRegistry = serviceRegistry;
+	}
+
+	@Override
+	public Class<? extends QueryParserService> getDefaultQueryParserServiceType() {
+		return AerospikeQueryParserService.class;
+	}
+
+	@Override
+	public Class<? extends SchemaDefiner> getSchemaDefinerType() {
+		return super.getSchemaDefinerType();
 	}
 
 	@Override
