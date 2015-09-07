@@ -66,12 +66,12 @@ public class RedisJsonMappingTest extends OgmTestCase {
 //		assertThat( loadedFamily ).isNotNull();
 //		System.out.println(loadedFamily.getMembers());
 //		session.getTransaction().commit();
+		
 		session.getTransaction().begin();
 		List<?> results = null;
 		try {
-			Query query = session.createQuery("from Family h where h.name=:name and id=:id");
+			Query query = session.createQuery("from Family h where h.name=:name");
 			query.setParameter("name", "yangbo");
-			query.setParameter("id", "yangbo123");
 			results = query.list();
 		} catch (Exception e) {
 			e.printStackTrace();

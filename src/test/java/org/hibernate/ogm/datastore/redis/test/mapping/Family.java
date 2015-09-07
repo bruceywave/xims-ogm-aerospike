@@ -15,20 +15,14 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 
-import org.hibernate.search.annotations.Analyze;
-import org.hibernate.search.annotations.Field;
-import org.hibernate.search.annotations.Indexed;
-
 /**
  * @author Gunnar Morling
  */
-//@Indexed
 @Entity
 public class Family {
 
 	@Id
 	private String id;
-//	@Field(analyze=Analyze.NO)
 	private String name;
 
 	@OneToMany

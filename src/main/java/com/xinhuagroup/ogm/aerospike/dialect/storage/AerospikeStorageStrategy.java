@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.hibernate.engine.spi.QueryParameters;
-import org.hibernate.engine.spi.TypedValue;
 import org.hibernate.ogm.dialect.spi.TupleContext;
 import org.hibernate.ogm.model.key.spi.AssociationKey;
 import org.hibernate.ogm.model.key.spi.EntityKey;
