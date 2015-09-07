@@ -70,7 +70,7 @@ public class RedisJsonMappingTest extends OgmTestCase {
 		session.getTransaction().begin();
 		List<?> results = null;
 		try {
-			Query query = session.createQuery("from Family h where h.name=:name");
+			Query query = session.createQuery(" from Family h where h.name=:name");
 			query.setParameter("name", "yangbo");
 			results = query.list();
 		} catch (Exception e) {

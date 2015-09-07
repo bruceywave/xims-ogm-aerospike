@@ -174,8 +174,11 @@ public class AerospikeStorageStrategy {
 		statement.setNamespace(aerospikeClientPolicy.databaseName);
 		// 设置表名
 		statement.setSetName(queryDescriptor.getCollectionName());
+		if (queryDescriptor.getProjection() != null && !queryDescriptor.getProjection().getProperties().isEmpty()) {
+			statement.setBinNames(queryDescriptor.getProjection().keySet().toArray(new String[queryDescriptor.getProjection().getProperties().size()]));
+		}
 		//添加索引
-		addIndex(queryDescriptor, queryParameters,entityKeyMetadata);
+		addIndex(queryDescriptor, queryParameters);
 		// 设置查询参数
 		// 1.根据查询参数创建索引，如果查询参数和主键一致，则不需要创建索引
 		Entity criteria = queryDescriptor.getCriteria();
@@ -202,14 +205,12 @@ public class AerospikeStorageStrategy {
 		RecordSet recordSet = aerospikeClient.query(null, statement);
 		return new AerospikeQueryResultsCursor(recordSet, entityKeyMetadata);
 	}
-	private void addIndex(AerospikeQueryDescriptor queryDescriptor,QueryParameters queryParameters,EntityKeyMetadata entityKeyMetadata){
+	private void addIndex(AerospikeQueryDescriptor queryDescriptor,QueryParameters queryParameters){
 		//取得表名称
 		String tableName = queryDescriptor.getCollectionName();
 		Entity criteria = queryDescriptor.getCriteria();
 		if(criteria != null && !criteria.getProperties().isEmpty()){
 			for (Map.Entry<String, Object> entry : criteria.getProperties().entrySet()) {
-				if(entry.getKey().equals(entityKeyMetadata.getColumnNames()[0]))
-					continue;
 				String indexName = NAMESPACE +"_" + tableName + "_" + entry.getKey();
 				//首先获取索引，判断索引时候存在
 				Record record = aerospikeClient.get(null, createKey(NAMESPACE, tableName, indexName));

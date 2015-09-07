@@ -311,31 +311,18 @@ public class AerospikeDialect extends BaseGridDialect implements MultigetGridDia
 	public ClosableIterator<Tuple> executeBackendQuery(BackendQuery<AerospikeQueryDescriptor> backendQuery, QueryParameters queryParameters) {
 		AerospikeQueryDescriptor queryDescriptor = backendQuery.getQuery();
 		EntityKeyMetadata entityKeyMetadata = backendQuery.getSingleEntityKeyMetadataOrNull();
-		//获取集合名称,实际是获取表名
-		String collectionName = getCollectionName(backendQuery, queryDescriptor, entityKeyMetadata);
-//		DBCollection collection = provider.getDatabase().getCollection(collectionName);
 		switch (queryDescriptor.getOperation()) {
 		case FIND:
 			return aerospikeOperation.queryEntitys(queryDescriptor, queryParameters, entityKeyMetadata);
 //			return doFind(queryDescriptor, queryParameters, collection, entityKeyMetadata);
 		case AGGREGATE:
+			System.out.println(123);
 //			return doAggregate(queryDescriptor, queryParameters, collection, entityKeyMetadata);
 		case COUNT:
+			System.out.println(1111111);
 //			return doCount(queryDescriptor, collection);
 		default:
 			throw new IllegalArgumentException("Unexpected query operation: " + queryDescriptor);
-		}
-	}
-
-	private String getCollectionName(BackendQuery<?> customQuery, AerospikeQueryDescriptor queryDescriptor, EntityKeyMetadata entityKeyMetadata) {
-		if (queryDescriptor.getCollectionName() != null) {
-			return queryDescriptor.getCollectionName();
-		} else if (entityKeyMetadata != null) {
-			return entityKeyMetadata.getTable();
-		} else {
-			// throw log.unableToDetermineCollectionName(
-			// customQuery.getQuery().toString() );
-			return null;
 		}
 	}
 
