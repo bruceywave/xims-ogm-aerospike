@@ -1,5 +1,6 @@
 package com.xinhuagroup.ogm.aerospike.dialect.model;
 
+import java.lang.reflect.Field;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,6 +12,26 @@ public class AerospikeTupleSnapshot implements TupleSnapshot{
 
 	public AerospikeTupleSnapshot(Map<String, Object> properties){
 		this.properties = properties;
+	}
+	
+	public AerospikeTupleSnapshot(Map<String, Object> properties,Class<?> targetType){
+		this.properties = properties;
+		convertVlaue(properties, targetType);
+	}
+	/**
+	 * 转化数据类型
+	 * @param properties
+	 * @param targetType
+	 */
+	private void convertVlaue(Map<String, Object> properties,Class<?> targetType){
+		if(targetType == null) return ;
+		for (Map.Entry<String, Object> entry : properties.entrySet()) {
+			for (Field  field : targetType.getDeclaredFields()) {
+				if(field.getName().equals(entry.getKey()) && (field.getType() == Integer.class || field.getType() == int.class)){
+					properties.put(entry.getKey(), Integer.valueOf(entry.getValue().toString()));
+				}
+			}
+		}
 	}
 
 	/**

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.engine.spi.QueryParameters;
 import org.hibernate.ogm.dialect.spi.TupleContext;
 import org.hibernate.ogm.model.key.spi.AssociationKey;
@@ -174,15 +175,17 @@ public class AerospikeStorageStrategy {
 		statement.setNamespace(aerospikeClientPolicy.databaseName);
 		// 设置表名
 		statement.setSetName(queryDescriptor.getCollectionName());
+//		statement.setIndexName(entityKeyMetadata.getColumnNames()[0]);
 		if (queryDescriptor.getProjection() != null && !queryDescriptor.getProjection().getProperties().isEmpty()) {
 			statement.setBinNames(queryDescriptor.getProjection().keySet().toArray(new String[queryDescriptor.getProjection().getProperties().size()]));
 		}
 		//添加索引
-		addIndex(queryDescriptor, queryParameters);
+		addIndex(queryDescriptor, queryParameters,entityKeyMetadata);
 		// 设置查询参数
 		// 1.根据查询参数创建索引，如果查询参数和主键一致，则不需要创建索引
 		Entity criteria = queryDescriptor.getCriteria();
 		Map<String, Object> params = null;
+//		List<Filter> filters = null;
 		Filter[] filters = null;
 		if(criteria != null){
 			 filters = new Filter[criteria.getProperties().size()];
@@ -191,34 +194,44 @@ public class AerospikeStorageStrategy {
 		if (params != null && !params.isEmpty()) {
 			int index = 0;
 			for (Map.Entry<String, Object> entry : params.entrySet()) {
+				String fieldName = entry.getKey();
+				if(StringUtils.isEmpty(fieldName)) continue;
 				if(entry.getValue() instanceof Integer){
-					filters[index] = Filter.equal(entry.getKey(), ((Number)entry.getValue()).longValue());
+//					filters.add(Filter.equal(fieldName, ((Number)entry.getValue()).longValue()));
+					filters[index] = Filter.equal(fieldName, ((Number)entry.getValue()).longValue());
 				}else if(entry.getValue() instanceof String){
-					filters[index] = Filter.equal(entry.getKey(), (String)entry.getValue());
+//					filters.add(Filter.equal(fieldName, (String)entry.getValue()));
+					filters[index] = Filter.equal(fieldName, (String)entry.getValue());
 				}else{
-					filters[index] = Filter.equal(entry.getKey(),Value.get(entry.getValue()));
+//					filters.add(Filter.equal(fieldName,Value.get(entry.getValue())));
+					filters[index] = Filter.equal(fieldName,Value.get(entry.getValue()));
 				}
 				index ++;
 			}
 		}
-		statement.setFilters(filters);
+//		if(filters != null && !filters.isEmpty())
+//		statement.setFilters(filters.toArray(new Filter[filters.size()]));
+		if(filters != null && filters.length > 0)
+			statement.setFilters(filters);
 		RecordSet recordSet = aerospikeClient.query(null, statement);
-		return new AerospikeQueryResultsCursor(recordSet, entityKeyMetadata);
+		return new AerospikeQueryResultsCursor(recordSet, entityKeyMetadata,queryDescriptor.getTargetType());
 	}
-	private void addIndex(AerospikeQueryDescriptor queryDescriptor,QueryParameters queryParameters){
+	private void addIndex(AerospikeQueryDescriptor queryDescriptor,QueryParameters queryParameters,EntityKeyMetadata entityKeyMetadata){
 		//取得表名称
 		String tableName = queryDescriptor.getCollectionName();
 		Entity criteria = queryDescriptor.getCriteria();
 		if(criteria != null && !criteria.getProperties().isEmpty()){
 			for (Map.Entry<String, Object> entry : criteria.getProperties().entrySet()) {
-				String indexName = NAMESPACE +"_" + tableName + "_" + entry.getKey();
+				String fieldName = entry.getKey();
+				if(StringUtils.isEmpty(fieldName)) continue;
+				String indexName = NAMESPACE +"_" + tableName + "_" + fieldName;
 				//首先获取索引，判断索引时候存在
 				Record record = aerospikeClient.get(null, createKey(NAMESPACE, tableName, indexName));
 				if(record != null && 1 == record.getInt(indexName)){
 //					log.exsitIndex()
 					continue;
 				}
-				IndexTask indexTask = addIndex(tableName, indexName, entry.getKey(), getIndexType(entry.getValue()));
+				IndexTask indexTask = addIndex(tableName, indexName, fieldName, getIndexType(entry.getValue()));
 				indexTask.waitTillComplete();
 			}
 		}

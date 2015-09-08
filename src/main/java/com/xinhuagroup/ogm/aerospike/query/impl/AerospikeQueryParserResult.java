@@ -29,6 +29,7 @@ public class AerospikeQueryParserResult implements QueryParsingResult{
 	@Override
 	public Object getQueryObject() {
 		return new AerospikeQueryDescriptor(
+				entityType,
 				collectionName,
 				unwinds == null ? Operation.FIND : Operation.AGGREGATE,
 				query,

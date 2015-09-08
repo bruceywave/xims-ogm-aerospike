@@ -22,7 +22,7 @@ public class AerospikeQueryDescriptorBuilder {
 	public AerospikeQueryDescriptor build() {
 		Entity criteriaEntity = new Entity(JSON.deserialize(criteria, Map.class));
 		Entity projectionEntity = new Entity(JSON.deserialize(projection, Map.class));
-		return new AerospikeQueryDescriptor(collection, operation,criteriaEntity,projectionEntity, null, null);
+		return new AerospikeQueryDescriptor(null,collection, operation,criteriaEntity,projectionEntity, null, null);
 	}
 	public boolean setCollection(String collection) {
 		this.collection = collection.trim();

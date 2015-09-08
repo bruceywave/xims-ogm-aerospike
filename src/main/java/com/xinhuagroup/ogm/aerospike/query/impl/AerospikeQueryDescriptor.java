@@ -7,6 +7,7 @@ import com.xinhuagroup.ogm.aerospike.dialect.value.Entity;
 
 @SuppressWarnings("serial")
 public class AerospikeQueryDescriptor implements Serializable {
+	private final Class<?> targetType;
 	/**
 	 * 操作枚举
 	 * @author brucey
@@ -25,7 +26,8 @@ public class AerospikeQueryDescriptor implements Serializable {
 	private final Entity orderBy;
 	private final List<String> unwinds;
 	
-	public AerospikeQueryDescriptor(String collectionName, Operation operation, Entity criteria, Entity projection, Entity orderBy, List<String> unwinds) {
+	public AerospikeQueryDescriptor(Class<?> targetType,String collectionName, Operation operation, Entity criteria, Entity projection, Entity orderBy, List<String> unwinds) {
+		this.targetType = targetType;
 		this.collectionName = collectionName;
 		this.operation = operation;
 		this.criteria = criteria;
@@ -50,5 +52,8 @@ public class AerospikeQueryDescriptor implements Serializable {
 	}
 	public List<String> getUnwinds() {
 		return unwinds;
+	}
+	public Class<?> getTargetType() {
+		return targetType;
 	}
 }
